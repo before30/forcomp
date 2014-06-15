@@ -89,7 +89,19 @@ object Anagrams {
    *  Note that the order of the occurrence list subsets does not matter -- the subsets
    *  in the example above could have been displayed in some other order.
    */
-  def combinations(occurrences: Occurrences): List[Occurrences] = ???
+  def combinations(occurrences: Occurrences): List[Occurrences] = {
+      if (occurrences.isEmpty) List(List())
+      else {
+        val restOcc = combinations(occurrences.tail)
+        val cKey = occurrences.head._1
+        val cValue = occurrences.head._2
+        (for {
+          i <- 0 until(cValue+1)
+          os <- restOcc
+        } yield if (i==0) os else (cKey, i)::os).toList
+
+    }
+  }
 
   /** Subtracts occurrence list `y` from occurrence list `x`.
    * 
@@ -101,7 +113,45 @@ object Anagrams {
    *  Note: the resulting value is an occurrence - meaning it is sorted
    *  and has no zero-entries.
    */
-  def subtract(x: Occurrences, y: Occurrences): Occurrences = ???
+  def subtract(x: Occurrences, y: Occurrences): Occurrences = {
+    def subtracMethod(orginal: Occurrences, k: Char, v: Int) : Occurrences = {
+      orginal.toMap.get(k) match {
+        case Some(value:Int) => {
+          orginal.toMap.updated(k, value - v).toList
+        }
+        case _ => orginal
+      }
+    }
+
+    def subtracByOne(result: Occurrences, occ: Occurrences): Occurrences = {
+      if (occ.isEmpty) result
+      else {
+        subtracByOne(subtracMethod(result, occ.head._1, occ.head._2), occ.tail)
+      }
+    }
+
+
+    val result = subtracByOne(x, y).filter(_._2 > 0).sortBy(_._1)
+    result
+  }
+
+//  def subtract(x: Occurrences, y: Occurrences): Occurrences = {
+//    println("x:" + x)
+//    println("y:" + y)
+//    val result = subtract2(x,y)
+//
+//        println("r:" + result)
+//        result
+//  }
+//  def subtract2(x: Occurrences, y: Occurrences): Occurrences =
+//    if (y.isEmpty) x
+//    else {
+//      val (first, rest) = x.span((p: (Char, Int)) => p._1 != y.head._1)
+//      val newFrequency = rest.head._2 - y.head._2
+//      val newRest = if (newFrequency > 0) (rest.head._1, newFrequency) :: rest.tail else rest.tail
+//      subtract2(first ::: newRest, y.tail)
+//    }
+
 
   /** Returns a list of all anagram sentences of the given sentence.
    *  
@@ -143,6 +193,24 @@ object Anagrams {
    *
    *  Note: There is only one anagram of an empty sentence.
    */
-  def sentenceAnagrams(sentence: Sentence): List[Sentence] = ???
+  def sentenceAnagrams(sentence: Sentence): List[Sentence] = {
+    def worker(occ: Occurrences): List[Sentence] = {
+      if (occ.isEmpty) List(List())
+      else {
+        val result =
+        (for {
+            comb <- combinations(occ)
+            word <- (dictionaryByOccurrences withDefaultValue List())(comb)
+            restSentence <- worker(subtract(occ, comb))
+          } yield word :: restSentence).toList
 
+        println(result)
+        result
+      }
+    }
+
+    val occurrences: Occurrences = sentenceOccurrences(sentence)
+    worker(occurrences)
+
+  }
 }
